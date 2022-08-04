@@ -1,3 +1,4 @@
+import os
 import re, time,sqlite3
 from nonebot.log import logger
 from nonebot.adapters.onebot.v11 import Event
@@ -129,6 +130,10 @@ def check_file():
         with open('data/database.db','r') as f:
             pass
     except FileNotFoundError:
+        try:
+            os.mkdir('data')
+        except:
+            pass
         a = sqlite3.connect('data/database.db')
         b = a.cursor()
         b.execute('''create table notice(flug text,user_id text,timef text,notice text,mod int)''')
@@ -137,6 +142,7 @@ def check_file():
         a.close()
 
 def add(flug, user_id, timef, notice, mod):
+    check_file()
     a = sqlite3.connect('data/database.db')
     b = a.cursor()
     b.execute(f'''insert into notice (flug,user_id,timef,notice,mod) values('{flug}','{user_id}','{timef}','{notice}','{mod}')''')
@@ -151,7 +157,7 @@ def get_time_msg():
     @返回:
         
     '''
-    
+    check_file()
     a = sqlite3.connect('data/database.db')
     b = a.cursor()
     b.execute('''select * from notice''')
