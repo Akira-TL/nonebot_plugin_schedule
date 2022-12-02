@@ -1,6 +1,7 @@
 import os
 import re, time,sqlite3
 from nonebot.log import logger
+from nonebot.matcher import Matcher
 from nonebot.adapters.onebot.v11 import Event
 from .config import Configs
 
@@ -24,12 +25,13 @@ def get_mod(event:Event):
     else:
         return 0
 
-def get_date(event:Event,mod) -> tuple:
+def get_date(event:Event,matcher:Matcher) -> tuple:
     now = time.localtime(time.time())
     year = now.tm_year
     month = now.tm_mon
     day = now.tm_mday
     msg = event.get_plaintext().split('提醒我')[0]
+    cnt:bool = False
     if '年' in msg:
         yearf = re.findall('(\d*)年',msg)[0]
         if len(yearf) == 2:
@@ -39,6 +41,7 @@ def get_date(event:Event,mod) -> tuple:
         else:
             debug(f'输入格式错误{yearf}')
         year = yearf
+        cnt = True
     if '月' in msg:
         if '每月' in msg:
             days = {'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10}
@@ -55,13 +58,15 @@ def get_date(event:Event,mod) -> tuple:
         else:
             monthf = re.findall('(\d*)月',msg)[0]
         month = monthf
+        cnt = True
     if '日' in msg:
-        dayf = re.findall('(\d*)日',msg)
+        dayf = re.findall('(\d*)日',msg)[0]
         if len(dayf) <= 2:
             dayf = '20' + dayf
         else:
             debug(f'输入格式错误{dayf}')
         day = dayf
+        cnt = True
     if '每周' in msg:
         weekdays = {'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'天':7,'日':7}
         weekday = re.findall('每周(.)')[0]
@@ -70,12 +75,19 @@ def get_date(event:Event,mod) -> tuple:
         except ValueError:
             weekday = weekdays[weekday]
         day += now.tm_wday - weekday
+        cnt = True
     if '明天' in msg:
         day += 1
-    if '大后天' in msg:
+        cnt = True
+    elif '大后天' in msg:
         day += 3
+        cnt = True
     elif '后天' in msg:
         day += 2
+        cnt = True
+    if not cnt:
+        matcher.stop_propagation()
+        matcher.finish()
     return int(year), int(month), int(day)
 
 def get_time(event:Event):
@@ -177,17 +189,17 @@ def get_time_msg():
                     flugs.append(content[0])
             elif content[4] == 1:
                 timeCompare = struct_now.tm_hour,struct_now.tm_hour,struct_now.tm_min
-                if timeCompare == timef:
+                if timeCompare >= timef:
                     insert = {content[1]:content[3]}
                     notices.update(insert)
             elif content[4] == 2:
                 timeCompare = struct_now.tm_wday,struct_now.tm_hour,struct_now.tm_min
-                if timeCompare == timef:
+                if timeCompare >= timef:
                     insert = {content[1]:content[3]}
                     notices.update(insert)
             elif content[4] == 3:
                 timeCompare = struct_now.tm_mday,struct_now.tm_hour,struct_now.tm_min
-                if timeCompare == timef:
+                if timeCompare >= timef:
                     insert = {content[1]:content[3]}
                     notices.update(insert)
             content = b.fetchmany()[0]

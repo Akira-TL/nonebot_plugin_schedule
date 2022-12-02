@@ -7,8 +7,9 @@ from nonebot import on_command, on_regex, get_bot, require, plugin
 from nonebot.matcher import Matcher
 from nonebot.params import ArgStr, CommandArg
 from nonebot.adapters.onebot.v11 import Event
+from utils.utils import scheduler
 
-scheduler = require('nonebot_plugin_apscheduler').scheduler
+# scheduler = require('nonebot_plugin_apscheduler').scheduler
 
 version = 'v1.0'
 __plugin_meta__ = plugin.PluginMetadata(
@@ -25,9 +26,9 @@ __plugin_meta__ = plugin.PluginMetadata(
 pr = 11
 setting = on_regex('提醒我',priority=pr,block=True)
 @setting.handle()
-async def setting_(event:Event):
+async def setting_(event:Event,matcher:Matcher):
     mod = get_mod(event)
-    year, month, day = get_date(event,mod)
+    year, month, day = get_date(event,matcher)
     hour, minute = get_time(event)
     notice = get_notice(event)
     send_time = get_send_time(year=year,month=month,day=day,hour=hour,minute=minute,mod=mod)
@@ -45,7 +46,10 @@ async def found_every_minutes():
     @返回:
         无
     '''
-    bot = get_bot()
+    try:
+        bot = get_bot()
+    except:
+        return
     check_file()
     content,flugs = get_time_msg() # 为{user_id:msg,user_id:msg,......}
     for send in content:
